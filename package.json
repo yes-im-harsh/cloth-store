@@ -1,7 +1,7 @@
 {
   "name": "clothing-store",
   "version": "1.0.0",
-  "description": "a backend api for cloting products",
+  "description": "a backend api for clothing products",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
