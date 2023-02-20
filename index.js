@@ -1,9 +1,10 @@
 const app = require("./app");
 require("dotenv").config();
 const colors = require("colors");
-
 const connectWithDB = require("./config/db");
 
+
+//Connect to the DB
 connectWithDB()
 
 app.listen(process.env.PORT, () => {

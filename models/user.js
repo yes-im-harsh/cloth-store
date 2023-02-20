@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
-const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+// const validator = require("validator");
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, "Please Enter Your Name"],
-    validate: [validator.isEmail, "Please enter email in correct form"],
     unique: true,
   },
 
@@ -22,6 +21,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     require: [true, "Please Enter Your Password"],
     minlength: [6, "Password must be 6 characters"],
+    // validate: [validator.isEmail, "Please enter email in correct format"],
 
     //With select we don't have to make our password undefined in the controller.
     select: false,
@@ -35,11 +35,9 @@ const userSchema = new mongoose.Schema({
   photo: {
     id: {
       type: String,
-      required: true,
     },
     secure_url: {
       type: String,
-      required: true,
     },
   },
 
@@ -67,8 +65,8 @@ userSchema.methods.isValidPassword = async function (passwordToCompare) {
 };
 
 //For Creating JWT
-userSchema.method.generateJWT = async function () {
-  return await jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
+userSchema.methods.generateJWT = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
     expiresIn: process.env.JWT_EXPIRY,
   });
 };
