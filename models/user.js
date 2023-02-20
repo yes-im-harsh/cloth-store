@@ -63,7 +63,7 @@ userSchema.pre("save", async function (next) {
 
 //For Verifying Password
 userSchema.methods.isValidPassword = async function (passwordToCompare) {
-  return await bcrypt.compare(toBeComparedPassword, this.password);
+  return await bcrypt.compare(passwordToCompare, this.password);
 };
 
 //For Creating JWT

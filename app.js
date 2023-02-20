@@ -17,10 +17,6 @@ app.use(
     tempFileDir: "/temp/",
   })
 );
-
-//temp check
-app.set("view engine", "ejs");
-
 //morgan
 app.use(morgan("tiny"));
 
