@@ -3,6 +3,9 @@ const User = require("../models/user");
 const cookieToken = require("../utils/cookieToken");
 const bigPromise = require("../middlewares/bigPromise");
 const cloudinary = require("cloudinary");
+const user = require("../models/user");
+const sendMail = require("../utils/mailHelper");
+const crypto = require("crypto");
 
 exports.signUp = bigPromise(async (req, res, next) => {
   if (!req.files) {
@@ -82,7 +85,86 @@ exports.logout = bigPromise(async (req, res, next) => {
   });
 
   res.status(200).json({
-    success: true, 
-    message: "Logout Success"
-  })
+    success: true,
+    message: "Logout Success",
+  });
+});
+
+exports.forgotPassword = bigPromise(async (req, res, next) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(new CustomError("Email not registered in the db", 400));
+  }
+
+  //get the forgotToken
+  const forgotToken = user.getForgotPasswordToken();
+
+  //save user with the forgot token
+  await user.save({ validateBeforeSave: false });
+
+  //create url to send to the user
+  const myUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/api/v1/password/reset/${forgotToken}`;
+
+  const message = `Click on this link to reset password \n\n ${myUrl}`;
+
+  try {
+    await sendMail({
+      email: user.email,
+      subject: "Cloth Store Reset Email",
+      message,
+    });
+  } catch (error) {
+    user.forgotPasswordToken = undefined;
+    user.forgotPasswordExpiry = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return next(new CustomError("Mail not sent, Something went wrong", 400));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Mail Sent",
+  });
+});
+
+exports.resetPassword = bigPromise(async (req, res, next) => {
+  const token = req.params.token;
+  console.log(token, "token");
+
+  const encryptToken = crypto.createHash("sha256").update(token).digest("hex");
+  console.log(encryptToken, "encrypted token");
+
+  console.log(Date.now());
+
+  const user = await User.findOne({
+    forgotPasswordToken: encryptToken,
+    forgotPasswordExpiry: { $gt: Date.now() },
+  });
+
+  console.log(user);
+
+  if (!user) {
+    return next(new CustomError("Not a valid user", 400));
+  }
+
+  if (req.body.password !== req.body.confirmPassword) {
+    return next(
+      new CustomError("Password and Confirm Password don't match", 400)
+    );
+  }
+
+  user.password = req.body.password;
+
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordExpiry = undefined;
+
+  await user.save();
+
+  //send json response or cookie
+  cookieToken(user, res);
 });
