@@ -6,6 +6,7 @@ const {
   forgotPassword,
   resetPassword,
   getLoggedInUserDetails,
+  updatePassword,
 } = require("../controllers/userController");
 const { isLoggedIn } = require("../middlewares/user");
 const router = express.Router();
@@ -16,5 +17,7 @@ router.route("/logout").get(logout);
 router.route("/forgotPassword").post(forgotPassword);
 router.route("/password/reset/:token").post(resetPassword);
 router.route("/user-dashboard").get(isLoggedIn, getLoggedInUserDetails);
+router.route("/user-dashboard").get(isLoggedIn, getLoggedInUserDetails);
+router.route("/password/update").post(isLoggedIn, updatePassword);
 
 module.exports = router;

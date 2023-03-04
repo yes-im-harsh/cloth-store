@@ -170,7 +170,7 @@ exports.resetPassword = bigPromise(async (req, res, next) => {
 });
 
 exports.getLoggedInUserDetails = bigPromise(async (req, res, next) => {
-  const userDetails = await user.findById(req.user.id);
+  const userDetails = await User.findById(req.user.id);
 
   if (!userDetails)
     return next(new CustomError("User details Not available, Please Login"));
@@ -179,4 +179,22 @@ exports.getLoggedInUserDetails = bigPromise(async (req, res, next) => {
     success: true,
     userDetails,
   });
+});
+
+exports.updatePassword = bigPromise(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select("+password");
+
+  if (!user) return next(new CustomError("User not logged in", 401));
+
+  const isCorrectOldPassword = await user.isValidPassword(req.body.oldPassword);
+
+  if (!isCorrectOldPassword) {
+    return next(new CustomError("old password don't match", 401));
+  }
+
+  user.password = req.body.password;
+
+  await user.save();
+
+  cookieToken(user, res);
 });
