@@ -168,3 +168,15 @@ exports.resetPassword = bigPromise(async (req, res, next) => {
   //send json response or cookie
   cookieToken(user, res);
 });
+
+exports.getLoggedInUserDetails = bigPromise(async (req, res, next) => {
+  const userDetails = await user.findById(req.user.id);
+
+  if (!userDetails)
+    return next(new CustomError("User details Not available, Please Login"));
+
+  res.status(200).json({
+    success: true,
+    userDetails,
+  });
+});
