@@ -198,3 +198,12 @@ exports.updatePassword = bigPromise(async (req, res, next) => {
 
   cookieToken(user, res);
 });
+
+exports.adminAllUser = bigPromise(async (req, res, next) => {
+  const user = await User.find();
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});
