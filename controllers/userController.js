@@ -186,13 +186,25 @@ exports.updatePassword = bigPromise(async (req, res, next) => {
 
   if (!user) return next(new CustomError("User not logged in", 401));
 
-  const isCorrectOldPassword = await user.isValidPassword(req.body.oldPassword);
+  const oldPassword = req.body.oldPassword;
+
+  if (!oldPassword) next(new CustomError("oldPassword not provided", 400));
+
+  const isCorrectOldPassword = await user.isValidPassword(oldPassword);
 
   if (!isCorrectOldPassword) {
     return next(new CustomError("old password don't match", 401));
   }
 
-  user.password = req.body.password;
+  const newPassword = req.body.newPassword;
+  const confirmNewPassword = req.body.confirmNewPassword;
+
+  if (!newPassword || !confirmNewPassword)
+    next(new CustomError("password or confirmPassword field missing"));
+  if (newPassword !== confirmNewPassword)
+    next(new CustomError("password and confirm password do not match"));
+
+  user.password = newPassword;
 
   await user.save();
 
