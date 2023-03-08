@@ -66,3 +66,86 @@ exports.getAllProduct = bigPromise(async (req, res, next) => {
     totalCountProduct,
   });
 });
+
+exports.getSingleProduct = bigPromise(async (req, res, next) => {
+  const singleProduct = await Product.findById(req.params.id);
+
+  if (!singleProduct) {
+    return next(new CustomError("Something went wrong with the user id", 401));
+  }
+
+  res.status(200).json({
+    success: true,
+    singleProduct,
+  });
+});
+
+//Admin Only Controllers
+exports.adminGetAllProducts = bigPromise(async (req, res, next) => {
+  const products = await Product.find();
+
+  res.status(200).json({
+    success: true,
+    products,
+  });
+});
+
+exports.adminUpdateSingleProduct = bigPromise(async (req, res, next) => {
+  let singleProduct = await Product.findById(req.params.id);
+
+  if (!singleProduct) {
+    return next(new CustomError("Something went wrong with the user id", 401));
+  }
+
+  let imagesArray = [];
+
+  if (req.files) {
+    for (let index = 0; index < singleProduct.photos.length; index++) {
+      const element = singleProduct.photos[index].id;
+      const result = await cloudinary.v2.uploader.destroy(element);
+    }
+
+    for (let index = 0; index < req.files.photos.length; index++) {
+      let result = await cloudinary.v2.uploader.upload(
+        req.files.photos[index].tempFilePath,
+        {
+          folder: "products",
+        }
+      );
+
+      imagesArray.push({
+        id: result.public_id,
+        secure_url: result.secure_url,
+      });
+    }
+  }
+  req.body.photos = imagesArray;
+
+  singleProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false,
+  });
+
+  res.status(200).json({
+    success: true,
+    singleProduct,
+  });
+});
+
+exports.adminDeleteSingleProduct = bigPromise(async (req, res, next) => {
+  const singleProduct = await Product.findById(req.params.id);
+
+  //destroying the cloudinary image data
+  for (let index = 0; index < singleProduct.photos.length; index++) {
+    const element = singleProduct.photos[index].id;
+    await cloudinary.v2.uploader.destroy(element);
+  }
+
+  await singleProduct.remove();
+
+  res.status(200).json({
+    success: true,
+    message: "Product deleted successfully",
+  });
+});
