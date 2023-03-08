@@ -80,6 +80,102 @@ exports.getSingleProduct = bigPromise(async (req, res, next) => {
   });
 });
 
+exports.addReview = bigPromise(async (req, res, next) => {
+  const productId = req.params.id;
+  const { rating, comment } = req.body;
+
+  console.log(req.user.id);
+
+  //Prepare the review
+  const review = {
+    user: req.user.id,
+    name: req.user.name,
+    rating: Number(rating),
+    comment,
+  };
+
+  //Find the product
+  const product = await Product.findById(productId);
+
+  //Check if user already had done review
+  const alreadyReview = product.reviews.find(
+    (review) => review.user.toString() === req.user.id.toString()
+  );
+
+  if (alreadyReview) {
+    product.reviews.forEach((review) => {
+      if (review.user.toString() === req.user.id.toString()) {
+        (review.comment = comment), (review.rating = rating);
+      }
+    });
+  } else {
+    product.reviews.push(review);
+    product.numberOfReviews = product.reviews.length;
+  }
+
+  // Product Rating
+  product.ratings =
+    product.reviews.reduce((item, acc) => item.rating + acc, 0) /
+    product.reviews.length;
+
+  //Saving
+  await product.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    success: true,
+    product,
+  });
+});
+
+exports.deleteReview = bigPromise(async (req, res, next) => {
+  const productId = req.params.id;
+
+  const product = await Product.findById(productId);
+
+  const reviews = product.reviews.filter(
+    (rev) => rev.user.toString() === req.user.id.toString()
+  );
+
+  const numberOfReviews = reviews.length;
+
+  // Product Rating
+  product.ratings =
+    product.reviews.reduce((item, acc) => item.rating + acc, 0) /
+    product.reviews.length;
+
+  //Ratings
+  const ratings = product.ratings;
+
+  //Saving
+  await Product.findByIdAndUpdate(
+    productId,
+    {
+      reviews,
+      ratings,
+      numberOfReviews,
+    },
+    {
+      new: true,
+      runValidators: true,
+      useFindAndModify: false,
+    }
+  );
+
+  res.status(200).json({
+    success: true,
+    product,
+  });
+});
+
+exports.getOnlyReviewsForOneProduct = bigPromise(async (req, res, next) => {
+  const product = await Product.findById(req.params.id);
+
+  res.status(200).json({
+    success: true,
+    reviews: product.reviews,
+  });
+});
+
 //Admin Only Controllers
 exports.adminGetAllProducts = bigPromise(async (req, res, next) => {
   const products = await Product.find();
